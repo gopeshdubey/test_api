@@ -113,7 +113,7 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
             : parseFloat(
                 balance_data[0].balance_data.available_balance_of_coin
               );
-        
+
         // SYMBOL BALANCE OF USER
         var simple_balance1 =
           balance_data1.length == 0
@@ -121,7 +121,7 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
             : parseFloat(
                 balance_data1[0].balance_data.available_balance_of_coin
               );
-            
+
         // PAIR_WITH BALANCE OF USER
         var balance = parseFloat(parseFloat(simple_balance).toFixed(8));
 
@@ -261,13 +261,16 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
           }
 
           if (updated_data.nModified > 0 && open_order.nModified > 0) {
-
             await session.commitTransaction();
             session.endSession();
             await session1.commitTransaction();
             session1.endSession();
 
-            var highest_bid = await get_lowest_or_less_than_and_equal_sell_bid(symbol, pair_with, price)
+            var highest_bid = await get_lowest_or_less_than_and_equal_sell_bid(
+              symbol,
+              pair_with,
+              price
+            );
 
             var seller_last_price_id = sorted_data[0].last_price._id;
 
@@ -278,14 +281,12 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
             if (highest_bid.length == 0) {
               res("Success");
             } else {
-
               var new_decimal_amount = decimal_amount;
 
               // LAST CODE
 
               // NEW CODE
               for (let k = 0; k < highest_bid.length; k++) {
-
                 const highest_bid_element = highest_bid[k];
 
                 if (new_decimal_amount == 0 || new_decimal_amount < 0) break;
@@ -313,7 +314,6 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
                 );
 
                 if (bid_amount == new_decimal_amount) {
-
                   for (let i = 0; i < sorted_user_data.length; i++) {
                     const element = sorted_user_data[i];
                     // UPDATE OPEN_ORDER_DATA FROM PENDING TO CONFIRM OF BUYER AND PUSH USER_DATA_WHO_FILLING_ORDER
@@ -507,7 +507,6 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
                           symbol,
                           seller_last_price_id
                         );
-
                       } else {
                         if (buyer_amount < edit) {
                           console.log(":: amount less than ::");
@@ -694,7 +693,6 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
                     var edit = new_decimal_amount;
 
                     for (let i = 0; i < sorted_user_data.length; i++) {
-
                       const element = sorted_user_data[i];
 
                       var uid = element.last_price.user_data.user_id;
@@ -1033,18 +1031,30 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
                 }
               }
 
-              for (let k = 0; k < highest_bid.length; k++) {
-                const highest_bid_element = highest_bid[k];
+              await Promise.all(
+                highest_bid.map(async (highest_bid_element) => {
+                  var last_price_id = highest_bid_element.last_price._id;
 
-                var last_price_id = highest_bid_element.last_price._id;
+                  await last_operation(
+                    last_price_id,
+                    symbol,
+                    seller_last_price_id
+                  );
+                })
+              );
 
-                await last_operation(last_price_id, symbol, seller_last_price_id)
+              // for (let k = 0; k < highest_bid.length; k++) {
+              //   const highest_bid_element = highest_bid[k];
 
-              }
+              //   var last_price_id = highest_bid_element.last_price._id;
 
-              await sell_last_operation(seller_last_price_id, symbol)
+              //   await last_operation(last_price_id, symbol, seller_last_price_id)
 
-              res("Success")
+              // }
+
+              await sell_last_operation(seller_last_price_id, symbol);
+
+              res("Success");
             }
           } else {
             await session.abortTransaction();
@@ -1070,7 +1080,11 @@ object_data.buy = (user_id, symbol, price, amount, pair_with) => {
   });
 };
 
-const get_lowest_or_less_than_and_equal_sell_bid = (symbol, pair_with, price) => {
+const get_lowest_or_less_than_and_equal_sell_bid = (
+  symbol,
+  pair_with,
+  price
+) => {
   return new Promise((res, rej) => {
     Coins.aggregate(
       [
@@ -1100,28 +1114,38 @@ const get_lowest_or_less_than_and_equal_sell_bid = (symbol, pair_with, price) =>
         else res(data);
       }
     );
-  })
-}
+  });
+};
 
 object_data.sell = (user_id, symbol, price, amount, pair_with) => {
   return new Promise(async (res, rej) => {
     const session = await Users.startSession();
+
     session.startTransaction();
+
     const session1 = await Coins.startSession();
+
     session1.startTransaction();
+
     const opts = { session };
+
     const opts1 = { session1 };
+
     try {
       var symbol_coin_id;
+
       // GET COIN BY ITS SYMBOL FROM COIN TABLE
       var symbol_data = await get_coin_by_symbol(symbol);
+
       if (symbol_data.length > 0) {
         symbol_coin_id = symbol_data[0]._id;
+
         // GET USER'S COIN BALANCE
         var balance_data = await get_user_balance_from_register_table(
           user_id,
           symbol
         );
+
         // BALANCE OF USER
         var simple_balance =
           balance_data.length == 0
@@ -1129,6 +1153,7 @@ object_data.sell = (user_id, symbol, price, amount, pair_with) => {
             : parseFloat(
                 balance_data[0].balance_data.available_balance_of_coin
               );
+
         var balance = parseFloat(parseFloat(simple_balance).toFixed(8));
         var decimal_price = parseFloat(parseFloat(price).toFixed(8));
         var decimal_amount = parseFloat(parseFloat(amount).toFixed(8));
@@ -1976,18 +2001,34 @@ object_data.sell = (user_id, symbol, price, amount, pair_with) => {
                 }
               }
 
-              for (let k = 0; k < highest_bid.length; k++) {
-                const highest_bid_element = highest_bid[k];
+              await Promise.all(
+                highest_bid.map(async (highest_bid_element) => {
+                  var last_price_id = highest_bid_element.last_price._id;
 
-                var last_price_id = highest_bid_element.last_price._id;
+                  await last_operation(
+                    last_price_id,
+                    symbol,
+                    seller_last_price_id
+                  );
+                })
+              );
 
-                await last_operation(last_price_id, symbol, seller_last_price_id)
+              // for (let k = 0; k < highest_bid.length; k++) {
 
-              }
+              //   const highest_bid_element = highest_bid[k];
 
-              await sell_last_operation(seller_last_price_id, symbol)
+              //   var last_price_id = highest_bid_element.last_price._id;
 
-              res("Success")
+              //   await last_operation(
+              //     last_price_id,
+              //     symbol,
+              //     seller_last_price_id
+              //   );
+              // }
+
+              await sell_last_operation(seller_last_price_id, symbol);
+
+              res("Success");
             }
           } else {
             await session.abortTransaction();
@@ -2017,48 +2058,48 @@ const last_operation = (bottom_last_price_id, symbol, seller_last_price_id) => {
   return new Promise(async (res, rej) => {
     try {
       // FOR BUY BID
-    // CHECK USER_DATA IS EMPTY OR NOT IN LAST_PRICE IN COIN
-    // IF EMPTY SO DELETE LAST_PRICE OBJECT
-    var check_user_data_array = await get_last_price_object_by_last_price_id_in_coin_table(
-      bottom_last_price_id
-    );
+      // CHECK USER_DATA IS EMPTY OR NOT IN LAST_PRICE IN COIN
+      // IF EMPTY SO DELETE LAST_PRICE OBJECT
+      var check_user_data_array = await get_last_price_object_by_last_price_id_in_coin_table(
+        bottom_last_price_id
+      );
 
-    if (check_user_data_array.length > 0) {
-      if (check_user_data_array[0].last_price[0].user_data.length == 0) {
-        var deleted_data = await delete_bid_data_of_symbol_by_last_price_id(
-          symbol,
-          bottom_last_price_id
-        );
-        res("Success")
-        
-      } else {
-        // ADD ALL AMOUNT OF USER_DATA AND THEN UPDATE LAST_PRICE AMOUNT AND TOTAL
-        var user_data_amount = 0;
-  
-        if(check_user_data_array.length > 0) {
-          await Promise.all(
-            check_user_data_array[0].last_price[0].user_data.map(
-              (data) => (user_data_amount = user_data_amount + data.amount)
-            )
-          );
-          var last_price_price = await check_user_data_array[0].last_price[0].price,
-            last_price_total = (await last_price_price) * user_data_amount;
-    
-          await update_amount_and_total_in_last_price(
+      if (check_user_data_array.length > 0) {
+        if (check_user_data_array[0].last_price[0].user_data.length == 0) {
+          var deleted_data = await delete_bid_data_of_symbol_by_last_price_id(
             symbol,
-            bottom_last_price_id,
-            user_data_amount,
-            last_price_total
+            bottom_last_price_id
           );
+          res("Success");
+        } else {
+          // ADD ALL AMOUNT OF USER_DATA AND THEN UPDATE LAST_PRICE AMOUNT AND TOTAL
+          var user_data_amount = 0;
+
+          if (check_user_data_array.length > 0) {
+            await Promise.all(
+              check_user_data_array[0].last_price[0].user_data.map(
+                (data) => (user_data_amount = user_data_amount + data.amount)
+              )
+            );
+            var last_price_price = await check_user_data_array[0].last_price[0]
+                .price,
+              last_price_total = (await last_price_price) * user_data_amount;
+
+            await update_amount_and_total_in_last_price(
+              symbol,
+              bottom_last_price_id,
+              user_data_amount,
+              last_price_total
+            );
+          }
+
+          res("Success");
         }
-  
-        res("Success")
+      } else {
+        res("Success");
       }
-    } else {
-      res("Success")
-    }
     } catch (error) {
-      rej(error)
+      rej(error);
     }
   });
 };
@@ -2067,56 +2108,53 @@ const sell_last_operation = (seller_last_price_id, symbol) => {
   return new Promise(async (res, rej) => {
     try {
       // FOR SELL BID
-    // CHECK USER_DATA IS EMPTY OR NOT IN LAST_PRICE IN COIN
-    // IF EMPTY SO DELETE LAST_PRICE OBJECT
-    var sell_check_user_data_array = await get_last_price_object_by_last_price_id_in_coin_table(
-      seller_last_price_id
-    );
+      // CHECK USER_DATA IS EMPTY OR NOT IN LAST_PRICE IN COIN
+      // IF EMPTY SO DELETE LAST_PRICE OBJECT
+      var sell_check_user_data_array = await get_last_price_object_by_last_price_id_in_coin_table(
+        seller_last_price_id
+      );
 
-    if (sell_check_user_data_array.length > 0) {
-      if (sell_check_user_data_array[0].last_price[0].user_data.length == 0) {
-
-        await delete_bid_data_of_symbol_by_last_price_id(
-          symbol,
-          seller_last_price_id
-        );
-        res("Success")
-  
-      } else {
-        // ADD ALL AMOUNT OF USER_DATA AND THEN UPDATE LAST_PRICE AMOUNT AND TOTAL
-        var sell_user_data_amount = 0;
-  
-        if (sell_check_user_data_array.length) {
-          await Promise.all(
-            sell_check_user_data_array[0].last_price[0].user_data.map(
-              (data) =>
-                (sell_user_data_amount = sell_user_data_amount + data.amount)
-            )
-          );
-          var sell_last_price_price = await sell_check_user_data_array[0]
-              .last_price[0].price,
-            sell_last_price_total =
-              (await sell_last_price_price) * sell_user_data_amount;
-    
-          await update_amount_and_total_in_last_price(
+      if (sell_check_user_data_array.length > 0) {
+        if (sell_check_user_data_array[0].last_price[0].user_data.length == 0) {
+          await delete_bid_data_of_symbol_by_last_price_id(
             symbol,
-            seller_last_price_id,
-            sell_user_data_amount,
-            sell_last_price_total
+            seller_last_price_id
           );
-        }
-  
-        res("Success")
-      }
-    } else {
-      res("Success")
-    }
+          res("Success");
+        } else {
+          // ADD ALL AMOUNT OF USER_DATA AND THEN UPDATE LAST_PRICE AMOUNT AND TOTAL
+          var sell_user_data_amount = 0;
 
+          if (sell_check_user_data_array.length) {
+            await Promise.all(
+              sell_check_user_data_array[0].last_price[0].user_data.map(
+                (data) =>
+                  (sell_user_data_amount = sell_user_data_amount + data.amount)
+              )
+            );
+            var sell_last_price_price = await sell_check_user_data_array[0]
+                .last_price[0].price,
+              sell_last_price_total =
+                (await sell_last_price_price) * sell_user_data_amount;
+
+            await update_amount_and_total_in_last_price(
+              symbol,
+              seller_last_price_id,
+              sell_user_data_amount,
+              sell_last_price_total
+            );
+          }
+
+          res("Success");
+        }
+      } else {
+        res("Success");
+      }
     } catch (error) {
-      rej(error)
+      rej(error);
     }
-  })
-}
+  });
+};
 
 const update_amount_and_total_in_last_price = (
   symbol,
