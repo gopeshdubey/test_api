@@ -35,49 +35,56 @@ app.use("/api/v3/users", users);
 app.use("/api/v3/simple", coin);
 app.use("/api/v3/coins", coins);
 app.use("/api/v3/vote", vote);
-// app.use('/api/v3/exchanges')
 
-usdt()
-  .then(async (tronWeb) => {
-    // var accounts = await tronWeb.createAccount()
-    // console.log({accounts});
-    const address = "TYzwR4Dhc64mggN8tGBSJhab9cyDbHJpJC";
-    tronWeb.trx
-      .getBalance(address)
-      .then((balance) => {
-        console.log({ balance });
-      })
-      .catch((err) => console.error("Error in balance"));
-  })
-  .catch((error) => {
-    console.log("error :::::", error);
-  });
+// usdt()
+//   .then(async (tronWeb) => {
+//     // var accounts = await tronWeb.createAccount()
+//     // console.log({accounts});
+//     const address = "TYzwR4Dhc64mggN8tGBSJhab9cyDbHJpJC";
+//     tronWeb.trx
+//       .getBalance(address)
+//       .then((balance) => {
+//         console.log({ balance });
+//       })
+//       .catch((err) => console.error("Error in balance"));
+//   })
+//   .catch((error) => {
+//     console.log("error :::::", error);
+//   });
 
-web3
-  .create_accounts()
-  .then((data) => {
-    // console.log("PK :::::", data);
-    web3
-      .get_address(data.privateKey)
-      .then((data) => {
-        web3
-          .get_balance(data.address)
-          .then((data) => console.log("Balance :::::", data))
-          .catch((err) => console.log("Error :::::", err));
-      })
-      .catch((err) => console.log("Error :::::", err));
-  })
-  .catch((err) => {
-    console.log("error :::::", err);
-  });
+// web3
+//   .create_accounts()
+//   .then((data) => {
+//     // console.log("PK :::::", data);
+//     web3
+//       .get_address(data.privateKey)
+//       .then((data) => {
+//         web3
+//           .get_balance(data.address)
+//           .then((data) => console.log("Balance :::::", data))
+//           .catch((err) => console.log("Error :::::", err));
+//       })
+//       .catch((err) => console.log("Error :::::", err));
+//   })
+//   .catch((err) => {
+//     console.log("error :::::", err);
+//   });
 
 crydata.encrypt_data("hi").then(async (data) => {
-  console.log('-------------------------------');
+  console.log("-------------------------------");
   crydata.decrypt_data(data).then(async (data) => {
     console.log("encrypted data :::::", data);
   });
 });
 
-http.createServer(app).listen(80);
-console.log("Server running at 80");
+// our server instance
+const server = http.createServer(app);
 
+// This creates our socket using the instance of the server
+const io = socket(server);
+
+require('./socket')(io)
+
+app.set('socket', io)
+
+server.listen(80, () => console.log(`Listening on port 80`));

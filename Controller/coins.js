@@ -34,12 +34,16 @@ object_data.create_coin = async (req, res) => {
 object_data.buy = async (req, res) => {
   try {
     const { user_id, symbol, price, amount, pair_with } = req.body;
+
+    var io = req.app.get('socket')
+
     var coin_data = await coins.buy(
       user_id,
       symbol,
       price,
       amount,
-      pair_with
+      pair_with,
+      io
     );
     response(res, 200, true, "Success", coin_data);
   } catch (error) {
@@ -50,13 +54,18 @@ object_data.buy = async (req, res) => {
 object_data.sell = async (req, res) => {
   try {
     const { user_id, symbol, price, amount, pair_with } = req.body;
+
+    var io = req.app.get('socket')
+
     var coin_data = await coins.sell(
       user_id,
       symbol,
       price,
       amount,
-      pair_with
+      pair_with,
+      io
     );
+
     response(res, 200, true, "Success", coin_data);
   } catch (error) {
     response(res, 400, false, "Error", error);
